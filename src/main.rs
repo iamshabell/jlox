@@ -1,41 +1,37 @@
 use std::env;
 use std::fs;
 use std::io::{self, BufRead, Write};
-use std::process::ExitCode;
-use std::result;
+use std::process::exit;
+use std::result::Result;
 
-type Result<T> = result::Result<T, ()>;
+use crate::scanner::*;
+mod scanner;
 
-fn start() -> Result<()> {
-    let args: Vec<String> = env::args().collect();
-
-    if args.len() > 2 {
-        eprintln!("Usage: jlox [script]");
-        Err(())
-    } else if args.len() == 2 {
-        run_file(&args[1]);
-        Ok(())
-    } else {
-        run_prompt();
-        Ok(())
+fn run_file(path: &str) -> Result<(), String> {
+    match fs::read_to_string(path) {
+        Ok(contents) => run(&contents),
+        Err(_) => return Err("ERROR: could not run file".to_string()),
     }
 }
 
-fn run_file(path: &str) {
-    let content =
-        fs::read_to_string(path).map_err(|err| eprintln!("ERROR: could not read file: {err}"));
+fn run(source: &str) -> Result<(), String> {
+    let scanner = Scanner::new(source);
+    let tokens = scanner.scan_tokens();
+
+    for token in tokens {
+        println!("{:?}", token)
+    }
+
+    return Ok(());
 }
 
-fn run(source: &str) {
-    todo!()
-}
-
-fn run_prompt() -> Result<()> {
-    while true {
+fn run_prompt() -> Result<(), String> {
+    loop {
         print!("> ");
-        let _ = io::stdout()
-            .flush()
-            .map_err(|err| eprintln!("ERROR: could not flush stdout: {err}"));
+        match io::stdout().flush() {
+            Ok(_) => (),
+            Err(_) => return Err("ERROR: could not flush stdout".to_string()),
+        }
 
         let mut buffer = String::new();
         let stdin = io::stdin();
@@ -46,15 +42,37 @@ fn run_prompt() -> Result<()> {
                     return Ok(());
                 }
             }
-            Err(_) => eprintln!("ERROR: could not read line"),
+            Err(_) => return Err("ERROR: could not read line".to_string()),
+        }
+
+        match run(&buffer) {
+            Ok(_) => (),
+            Err(err) => return Err("ERROR: could not read line: {err}".to_string()),
         }
     }
-    Ok(())
 }
 
-fn main() -> ExitCode {
-    match start() {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(()) => ExitCode::FAILURE,
+fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() > 2 {
+        eprintln!("Usage: jlox [script]");
+        exit(64);
+    } else if args.len() == 2 {
+        match run_file(&args[1]) {
+            Ok(_) => exit(0),
+            Err(err) => {
+                eprintln!("ERROR:\n{}", err);
+                exit(1);
+            }
+        }
+    } else {
+        match run_prompt() {
+            Ok(_) => exit(0),
+            Err(err) => {
+                eprintln!("ERROR:\n{}", err);
+                exit(1);
+            }
+        }
     }
 }
