@@ -21,9 +21,13 @@ impl Scanner {
     }
 
     pub fn scan_tokens(self: &mut Self) -> Result<Vec<Token>, String> {
+        let mut errors = vec![];
         while !self.is_at_end() {
             self.start = self.current;
-            self.scan_tokens();
+            match self.scan_token() {
+                Ok(_) => (),
+                Err(msg) => errors.push(msg),
+            }
         }
 
         self.tokens.push(Token {
@@ -33,6 +37,15 @@ impl Scanner {
             line_number: self.line,
         });
 
+        if errors.len() > 0 {
+            let mut joined = "".to_string();
+            errors.iter().for_each(|msg| {
+                joined.push_str(&msg);
+                joined.push_str("\n");
+            });
+            return Err(joined);
+        }
+
         Ok(self.tokens.clone())
     }
 
@@ -40,7 +53,7 @@ impl Scanner {
         self.current >= self.source.len()
     }
 
-    fn scan_token(self: &mut Self) -> Result<Token, String> {
+    fn scan_token(self: &mut Self) -> Result<(), String> {
         let c = self.in_advance();
 
         match c {
@@ -89,11 +102,33 @@ impl Scanner {
                 };
 
                 self.add_token(token);
-            }
+            },
+            '/' => {
+                if self.char_match('/') {
+                    loop {
+                        if self.peek() == '\n' || self.is_at_end() {
+                            break;
+                        }
+                        self.in_advance();
+                    }
+                } else {
+                    self.add_token(Slash);
+                }
+            },
+            ' ' | '\r' | '\t' => {},
+            '\n' => self.line += 1,
             _ => return Err(format!("Unexpected characater: {}", c)),
         }
 
-        todo!()
+        Ok(())
+    }
+
+    fn peek(self: &mut Self) -> char {
+        if self.is_at_end() {
+            return '\0';
+        }
+
+        self.source.as_bytes()[self.current] as char
     }
 
     fn char_match(self: &mut Self, expected: char) -> bool {
@@ -110,9 +145,6 @@ impl Scanner {
     }
 
     fn in_advance(self: &mut Self) -> char {
-        // self.current += 1;
-        // let c = self.source.chars().nth(self.current);
-
         let c = self.source.as_bytes()[self.current];
         self.current += 1;
 
@@ -138,7 +170,7 @@ impl Scanner {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
     // single char tokens
     LeftParen,
@@ -232,3 +264,7 @@ impl Token {
         format!("{} {} {:?}", self.token_type, self.lexeme, self.literal)
     }
 }
+
+
+
+
