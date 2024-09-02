@@ -15,11 +15,10 @@ fn run_file(path: &str) -> Result<(), String> {
 }
 
 fn run(source: &str) -> Result<(), String> {
-    let scanner = Scanner::new(source);
+    let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
-
     for token in tokens {
-        println!("{:?}", token)
+        println!("{:?}", token);
     }
 
     return Ok(());
@@ -47,7 +46,7 @@ fn run_prompt() -> Result<(), String> {
 
         match run(&buffer) {
             Ok(_) => (),
-            Err(err) => return Err("ERROR: could not read line: {err}".to_string()),
+            Err(_) => return Err("ERROR: could not read line".to_string()),
         }
     }
 }
