@@ -8,6 +8,7 @@ pub struct Scanner {
     line: usize,
 }
 
+
 impl Scanner {
     pub fn new(source: &str) -> Self {
         Self {
@@ -53,10 +54,59 @@ impl Scanner {
             '+' => self.add_token(Plus),
             ';' => self.add_token(Semicolon),
             '*' => self.add_token(Star),
+            '!' => {
+                let token = if self.char_match('=') {
+                    BangEqual
+                } else {
+                    Bang
+                };
+
+                self.add_token(token);
+            },
+            '=' => {
+                let token = if self.char_match('=') {
+                    EqualEqual
+                } else {
+                    Equal
+                };
+
+                self.add_token(token);
+            },
+            '<' => {
+                let token = if self.char_match('=') {
+                    LessEqual
+                } else {
+                    Less
+                };
+
+                self.add_token(token);
+            },
+            '>' => {
+                let token = if self.char_match('=') {
+                    GreaterEqual
+                } else {
+                    Greater
+                };
+
+                self.add_token(token);
+            }
             _ => return Err(format!("Unexpected characater: {}", c)),
         }
 
         todo!()
+    }
+
+    fn char_match(self: &mut Self, expected: char) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
+
+        if self.source.as_bytes()[self.current] as char != expected {
+            return false;
+        } else {
+            self.current += 1;
+            return true;
+        }
     }
 
     fn in_advance(self: &mut Self) -> char {
