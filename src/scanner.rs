@@ -1,4 +1,27 @@
 use std::string::String;
+use std::collections::HashMap;
+use once_cell::sync::Lazy;
+
+static KEYWORDS: Lazy<HashMap<&'static str, TokenType>> = Lazy::new(|| {
+    let mut m = HashMap::new();
+    m.insert("and",    And);
+    m.insert("class",  Class);
+    m.insert("else",   Else);
+    m.insert("false",  False);
+    m.insert("for",    For);
+    m.insert("fun",    Fun);
+    m.insert("if",     If);
+    m.insert("nil",    Nil);
+    m.insert("or",     Or);
+    m.insert("print",  Print);
+    m.insert("return", Print);
+    m.insert("super",  Super);
+    m.insert("this",   This);
+    m.insert("true",   True);
+    m.insert("var",    Var);
+    m.insert("while",  While);
+    m
+});
 
 pub struct Scanner {
     source: String,
@@ -140,7 +163,10 @@ impl Scanner {
 	    self.in_advance();
 	}
 
-	self.add_token(Identifier)
+	let text = &self.source[self.start..self.current];
+	let token_type = KEYWORDS.get(text).copied().unwrap_or(Identifier);
+
+	self.add_token(token_type)
     }
 
     fn number(&mut self) -> Result<(), String> {
@@ -240,7 +266,7 @@ impl Scanner {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenType {
     // single char tokens
     LeftParen,
@@ -455,10 +481,6 @@ mod tests {
         let source = "init_var = 28;";
         let mut scanner = Scanner::new(source);
         let _ = scanner.scan_tokens();
-	
-	for token in &scanner.tokens {
-	    println!("{:?}", token)
-	}
 
         assert_eq!(scanner.tokens.len(), 5);
 	assert_eq!(scanner.tokens[0].token_type, Identifier);
@@ -466,5 +488,27 @@ mod tests {
 	assert_eq!(scanner.tokens[2].token_type, Number);
 	assert_eq!(scanner.tokens[3].token_type, Semicolon);
 	assert_eq!(scanner.tokens[4].token_type, Eof);
+
+    }
+    #[test]
+    fn handle_keywords() {
+        let source = "var var_name = 8; \nwhile true { print 3 };";
+        let mut scanner = Scanner::new(source);
+        let _ = scanner.scan_tokens();
+
+        assert_eq!(scanner.tokens.len(), 13);
+	assert_eq!(scanner.tokens[0].token_type, Var);
+	assert_eq!(scanner.tokens[1].token_type, Identifier);
+	assert_eq!(scanner.tokens[2].token_type, Equal);
+	assert_eq!(scanner.tokens[3].token_type, Number);
+	assert_eq!(scanner.tokens[4].token_type, Semicolon);
+	assert_eq!(scanner.tokens[5].token_type, While);
+	assert_eq!(scanner.tokens[6].token_type, True);
+	assert_eq!(scanner.tokens[7].token_type, LeftBrace);
+	assert_eq!(scanner.tokens[8].token_type, Print);
+	assert_eq!(scanner.tokens[9].token_type, Number);
+	assert_eq!(scanner.tokens[10].token_type, RightBrace);
+	assert_eq!(scanner.tokens[11].token_type, Semicolon);
+	assert_eq!(scanner.tokens[12].token_type, Eof);
     }
 }
