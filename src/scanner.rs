@@ -349,5 +349,20 @@ mod tests {
 	    _ => panic!("Should have failed"),
 	}
     }
+
+    #[test]
+    fn handle_multiline_string_literals() {
+        let source = "\"YAY\ndef\"";
+        let mut scanner =  Scanner::new(source);
+        let _ = scanner.scan_tokens();
+
+        assert_eq!(scanner.tokens.len(), 2);
+        assert_eq!(scanner.tokens[0].token_type, StringLit);
+	
+	match scanner.tokens[0].literal.as_ref().unwrap() {
+	    StringValue(val) => assert_eq!(val, "YAY\ndef"),
+	    _ => panic!("Unrecognized literal"),
+	}
+    }
  
  }
