@@ -20,7 +20,7 @@ impl Scanner {
         }
     }
 
-    pub fn scan_tokens(self: &mut Self) -> Result<Vec<Token>, String> {
+    pub fn scan_tokens(&mut self) -> Result<Vec<Token>, String> {
         let mut errors = vec![];
         while !self.is_at_end() {
             self.start = self.current;
@@ -37,23 +37,23 @@ impl Scanner {
             line_number: self.line,
         });
 
-        if errors.len() > 0 {
+        if !errors.is_empty() {
             let mut joined = "".to_string();
-            errors.iter().for_each(|msg| {
-                joined.push_str(&msg);
-                joined.push_str("\n");
-            });
+	    for error in errors {
+		joined.push_str(&error);
+                joined.push('\n');
+	    }
             return Err(joined);
         }
 
         Ok(self.tokens.clone())
     }
 
-    fn is_at_end(self: &mut Self) -> bool {
+    fn is_at_end(&mut self) -> bool {
         self.current >= self.source.len()
     }
 
-    fn scan_token(self: &mut Self) -> Result<(), String> {
+    fn scan_token(&mut self) -> Result<(), String> {
         let c = self.in_advance();
 
         match c {
@@ -124,7 +124,7 @@ impl Scanner {
         Ok(())
     }
 
-    fn string(self: &mut Self) -> Result<(), String> {
+    fn string(&mut self) -> Result<(), String> {
 	while self.peek() != '"' &&  !self.is_at_end() {
 	    if self.peek() == '\n' {
 		self.line += 1;
@@ -143,7 +143,7 @@ impl Scanner {
 	Ok(())
     }
 
-    fn peek(self: &mut Self) -> char {
+    fn peek(&mut self) -> char {
         if self.is_at_end() {
             return '\0';
         }
@@ -151,7 +151,7 @@ impl Scanner {
         self.source.chars().nth(self.current).unwrap()
     }
  
-    fn char_match(self: &mut Self, expected: char) -> bool {
+    fn char_match(&mut self, expected: char) -> bool {
         if self.is_at_end() {
             return false;
         }
@@ -164,27 +164,25 @@ impl Scanner {
         }
     }
 
-    fn in_advance(self: &mut Self) -> char {
+    fn in_advance(&mut self) -> char {
         let c = self.source.as_bytes()[self.current];
         self.current += 1;
 
         c as char
     }
 
-    fn add_token(self: &mut Self, token_type: TokenType) {
+    fn add_token(&mut self, token_type: TokenType) {
         self.add_token_alt(token_type, None);
     }
 
-    fn add_token_alt(self: &mut Self, token_type: TokenType, literal: Option<LiteralValue>) {
+    fn add_token_alt(&mut self, token_type: TokenType, literal: Option<LiteralValue>) {
         let mut text = "".to_string();
-        let bytes = self.source.as_bytes();
-        for i in self.start..self.current {
-            text.push(bytes[i] as char);
-        }
+        let _ = self.source[self.start..self.current].chars().map(|ch| text.push(ch));
+
         self.tokens.push(Token {
-            token_type: token_type,
+            token_type,
             lexeme: text,
-            literal: literal,
+            literal,
             line_number: self.line,
         })
     }
@@ -281,7 +279,7 @@ impl Token {
         }
     }
 
-    pub fn to_string(self: &Self) -> String {
+    pub fn _to_string(&self) -> String {
         format!("{} {} {:?}", self.token_type, self.lexeme, self.literal)
     }
 }
@@ -296,8 +294,7 @@ mod tests {
     fn handle_char_tokens() {
         let source = "((  )) {}";
         let mut scanner =  Scanner::new(source);
-
-        scanner.scan_tokens();
+	let _ = scanner.scan_tokens();
 
         assert_eq!(scanner.tokens.len(), 7);
         assert_eq!(scanner.tokens[0].token_type, LeftParen);
@@ -313,8 +310,7 @@ mod tests {
     fn test_operators_tokens() {
         let source = "! != == >=";
         let mut scanner =  Scanner::new(source);
-
-        scanner.scan_tokens();
+	let _ = scanner.scan_tokens();
 
         assert_eq!(scanner.tokens.len(), 5);
         assert_eq!(scanner.tokens[0].token_type, Bang);

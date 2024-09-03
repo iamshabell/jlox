@@ -10,18 +10,18 @@ mod scanner;
 fn run_file(path: &str) -> Result<(), String> {
     match fs::read_to_string(path) {
         Ok(contents) => run(&contents),
-        Err(_) => return Err("ERROR: could not run file".to_string()),
+        Err(_) => Err("ERROR: could not run file".to_string()),
     }
 }
 
 fn run(source: &str) -> Result<(), String> {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
-    for token in tokens {
+    while let Ok(token) = &tokens {
         println!("{:?}", token);
     }
 
-    return Ok(());
+    Ok(())
 }
 
 fn run_prompt() -> Result<(), String> {
