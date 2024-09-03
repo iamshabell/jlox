@@ -121,7 +121,9 @@ impl Scanner {
             char => {
                 if is_digit(char) {
                     let _ = self.number();
-                } else {
+                } else if is_alpha(char){
+		    self.identifier();
+		} else {
                     return Err(format!(
                         "Unexpected characater at line {}: {}",
                         self.line, c
@@ -131,6 +133,14 @@ impl Scanner {
         }
 
         Ok(())
+    }
+
+    fn identifier(&mut self) {
+	while is_alpha_numeric(self.peek()) {
+	    self.in_advance();
+	}
+
+	self.add_token(Identifier)
     }
 
     fn number(&mut self) -> Result<(), String> {
@@ -330,6 +340,15 @@ fn is_digit(c: char) -> bool {
     c as u8 >= b'0' && c as u8 <= b'9'
 }
 
+fn is_alpha(c: char) -> bool {
+    let char = c as u8;
+    char >= b'a' && char <= b'z' || char >= b'A' && char <= b'Z' || char == b'_'
+}
+
+fn is_alpha_numeric(c: char) -> bool {
+    is_alpha(c) || is_digit(c)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -428,5 +447,24 @@ mod tests {
             _ => panic!("Unrecognized literal"),
         }
 
+    }
+
+
+    #[test]
+    fn handle_identifiers() {
+        let source = "init_var = 28;";
+        let mut scanner = Scanner::new(source);
+        let _ = scanner.scan_tokens();
+	
+	for token in &scanner.tokens {
+	    println!("{:?}", token)
+	}
+
+        assert_eq!(scanner.tokens.len(), 5);
+	assert_eq!(scanner.tokens[0].token_type, Identifier);
+	assert_eq!(scanner.tokens[1].token_type, Equal);
+	assert_eq!(scanner.tokens[2].token_type, Number);
+	assert_eq!(scanner.tokens[3].token_type, Semicolon);
+	assert_eq!(scanner.tokens[4].token_type, Eof);
     }
 }
