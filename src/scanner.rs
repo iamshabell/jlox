@@ -117,10 +117,30 @@ impl Scanner {
             },
             ' ' | '\r' | '\t' => {},
             '\n' => self.line += 1,
+	    '"' => self.string()?,
             _ => return Err(format!("Unexpected characater: {}", c)),
         }
 
         Ok(())
+    }
+
+    fn string(self: &mut Self) -> Result<(), String> {
+	while self.peek() != '"' &&  !self.is_at_end() {
+	    if self.peek() == '\n' {
+		self.line += 1;
+	    }
+	    self.in_advance();
+	}
+
+	if self.is_at_end() {
+	    return Err("Unterminated string".to_string());
+	}
+
+	let value = &self.source[self.start + 1..self.current];
+
+	self.add_token_alt(StringLit, Some(StringValue(value.to_string())));
+
+	Ok(())
     }
 
     fn peek(self: &mut Self) -> char {
@@ -128,19 +148,19 @@ impl Scanner {
             return '\0';
         }
 
-        self.source.as_bytes()[self.current] as char
+        self.source.chars().nth(self.current).unwrap()
     }
-
+ 
     fn char_match(self: &mut Self, expected: char) -> bool {
         if self.is_at_end() {
             return false;
         }
 
         if self.source.as_bytes()[self.current] as char != expected {
-            return false;
+            false
         } else {
             self.current += 1;
-            return true;
+            true
         }
     }
 
@@ -197,7 +217,7 @@ pub enum TokenType {
 
     // Literals
     Identifier,
-    String,
+    StringLit,
     Number,
 
     // Keywords
@@ -236,6 +256,7 @@ pub enum LiteralValue {
 }
 
 use TokenType::*;
+use LiteralValue::*;
 
 #[derive(Debug, Clone)]
 pub struct Token {
@@ -302,4 +323,31 @@ mod tests {
         assert_eq!(scanner.tokens[3].token_type, GreaterEqual);
         assert_eq!(scanner.tokens[4].token_type, Eof);
     }
+
+    #[test]
+    fn handle_string_literals() {
+        let source = r#""YAY""#;
+        let mut scanner =  Scanner::new(source);
+        let _ = scanner.scan_tokens();
+        assert_eq!(scanner.tokens.len(), 2);
+        assert_eq!(scanner.tokens[0].token_type, StringLit);
+	
+	match scanner.tokens[0].literal.as_ref().unwrap() {
+	    StringValue(val) => assert_eq!(val, "YAY"),
+	    _ => panic!("Unrecognized literal"),
+	}
+    }
+
+    #[test]
+    fn handle_terminated_string_literals() {
+        let source = r#""YAY"#;
+        let mut scanner =  Scanner::new(source);
+        let result = scanner.scan_tokens();
+
+	match result {
+	    Err(_) => (),
+	    _ => panic!("Should have failed"),
+	}
+    }
+ 
  }
