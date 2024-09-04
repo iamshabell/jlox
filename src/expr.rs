@@ -1,6 +1,6 @@
 use crate::scanner::*;
 
-pub enum LiteralValue {
+pub enum ExpLiteralValue {
     Number(f32),
     StringValue(String),
     True,
@@ -8,9 +8,25 @@ pub enum LiteralValue {
     Nil,
 }
 
-use LiteralValue::*;
+use ExpLiteralValue::*;
 
-impl LiteralValue {
+fn un_wrap_as_f32(literal: Option<LiteralValue>) -> f32 {
+    match literal {
+	Some(LiteralValue::IntValue(x)) => x as f32,
+	Some(LiteralValue::FloatValue(x)) => x as f32,
+	_ => panic!("Could not unwrap as f32"),
+    }
+}
+
+fn un_wrap_as_string(literal: Option<LiteralValue>) -> String {
+    match literal {
+	Some(LiteralValue::StringValue(x)) => x.clone(),
+	Some(LiteralValue::IdentifierValue(x)) => x.clone(),
+	_ => panic!("Could not unwrap as String"),
+    }
+}
+
+impl ExpLiteralValue {
     pub fn to_string(&self) -> String {
         match self {
             Number(x) => x.to_string(),
@@ -20,7 +36,20 @@ impl LiteralValue {
             Nil => "nil".to_string(),
         }
     }
+    
+    pub fn from_token(token: Token) -> Self {
+	match token.token_type {
+	    TokenType::Number => Self::Number(un_wrap_as_f32(token.literal)),
+	    TokenType::StringLit => Self::StringValue(un_wrap_as_string(token.literal)),
+	    TokenType::False => Self::False,
+	    TokenType::True => Self::True,
+	    TokenType::Nil => Self::Nil,
+	    _ => panic!("Could not create LiteralValue from {:?}", token),
+	}
+    }
 }
+
+
 pub enum Expr {
     Binary {
         left: Box<Expr>,
@@ -31,7 +60,7 @@ pub enum Expr {
         expression: Box<Expr>,
     },
     Literal {
-        value: LiteralValue,
+        value: ExpLiteralValue,
     },
     Unary {
         operator: Token,
@@ -62,7 +91,7 @@ impl Expr {
         }
     }
 
-    pub fn print(&self) {
+    pub fn from_token(&self) {
         println!("{}", self.to_string());
     }
 }
