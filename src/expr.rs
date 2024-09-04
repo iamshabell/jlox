@@ -1,6 +1,7 @@
-use crate::scanner::*;
+use crate::scanner::{Token, TokenType};
+use crate::scanner;
 
-pub enum ExpLiteralValue {
+pub enum LiteralValue {
     Number(f32),
     StringValue(String),
     True,
@@ -8,47 +9,44 @@ pub enum ExpLiteralValue {
     Nil,
 }
 
-use ExpLiteralValue::*;
-
-fn un_wrap_as_f32(literal: Option<LiteralValue>) -> f32 {
+fn unwrap_as_f32(literal: Option<scanner::LiteralValue>) -> f32 {
     match literal {
-	Some(LiteralValue::IntValue(x)) => x as f32,
-	Some(LiteralValue::FloatValue(x)) => x as f32,
-	_ => panic!("Could not unwrap as f32"),
+        Some(scanner::LiteralValue::IntValue(x)) => x as f32,
+        Some(scanner::LiteralValue::FloatValue(x)) => x as f32,
+        _ => panic!("Could not unwrap as f32"),
     }
 }
 
-fn un_wrap_as_string(literal: Option<LiteralValue>) -> String {
+fn unwrap_as_string(literal: Option<scanner::LiteralValue>) -> String {
     match literal {
-	Some(LiteralValue::StringValue(x)) => x.clone(),
-	Some(LiteralValue::IdentifierValue(x)) => x.clone(),
-	_ => panic!("Could not unwrap as String"),
+        Some(scanner::LiteralValue::StringValue(s)) => s.clone(),
+        Some(scanner::LiteralValue::IdentifierValue(s)) => s.clone(),
+        _ => panic!("Could not unwrap as string"),
     }
 }
 
-impl ExpLiteralValue {
+impl LiteralValue {
     pub fn to_string(&self) -> String {
         match self {
-            Number(x) => x.to_string(),
-            StringValue(x) => x.clone(),
-            True => "true".to_string(),
-            False => "false".to_string(),
-            Nil => "nil".to_string(),
+            LiteralValue::Number(x) => x.to_string(),
+            LiteralValue::StringValue(x) => x.clone(),
+            LiteralValue::True => "true".to_string(),
+            LiteralValue::False => "false".to_string(),
+            LiteralValue::Nil => "nil".to_string(),
         }
     }
-    
+
     pub fn from_token(token: Token) -> Self {
-	match token.token_type {
-	    TokenType::Number => Self::Number(un_wrap_as_f32(token.literal)),
-	    TokenType::StringLit => Self::StringValue(un_wrap_as_string(token.literal)),
-	    TokenType::False => Self::False,
-	    TokenType::True => Self::True,
-	    TokenType::Nil => Self::Nil,
-	    _ => panic!("Could not create LiteralValue from {:?}", token),
-	}
+        match token.token_type {
+            TokenType::Number => Self::Number(unwrap_as_f32(token.literal)),
+            TokenType::StringLit => Self::StringValue(unwrap_as_string(token.literal)),
+            TokenType::False => Self::False,
+            TokenType::True => Self::True,
+            TokenType::Nil => Self::Nil,
+            _ => panic!("Could not create LiteralValue from {:?}", token),
+        }
     }
 }
-
 
 pub enum Expr {
     Binary {
@@ -60,7 +58,7 @@ pub enum Expr {
         expression: Box<Expr>,
     },
     Literal {
-        value: ExpLiteralValue,
+        value: LiteralValue,
     },
     Unary {
         operator: Token,
@@ -68,7 +66,7 @@ pub enum Expr {
     },
 }
 
-impl Expr {
+impl  Expr {
     pub fn to_string(&self) -> String {
         match self {
             Expr::Binary {
@@ -79,9 +77,9 @@ impl Expr {
                 "({} {} {})",
                 operator.lexeme,
                 left.to_string(),
-                right.to_string(),
+                right.to_string()
             ),
-            Expr::Grouping { expression } => format!("(group {})", expression.to_string()),
+            Expr::Grouping { expression } => format!("(group {})", (*expression).to_string()),
             Expr::Literal { value } => format!("{}", value.to_string()),
             Expr::Unary { operator, right } => {
                 let operator_str = operator.lexeme.clone();
@@ -91,7 +89,7 @@ impl Expr {
         }
     }
 
-    pub fn from_token(&self) {
+    pub fn print(&self) {
         println!("{}", self.to_string());
     }
 }
@@ -99,8 +97,8 @@ impl Expr {
 #[cfg(test)]
 mod tests {
     use super::Expr::*;
+    use super::LiteralValue::*;
     use super::*;
-
     #[test]
     fn pretty_print_ast() {
         let minus_token = Token {
@@ -109,7 +107,7 @@ mod tests {
             literal: None,
             line_number: 0,
         };
-        let number = Literal {
+        let onetwothree = Literal {
             value: Number(123.0),
         };
         let group = Grouping {
@@ -117,23 +115,22 @@ mod tests {
                 value: Number(45.67),
             }),
         };
-        let multiplication = Token {
+        let multi = Token {
             token_type: TokenType::Star,
             lexeme: "*".to_string(),
             literal: None,
             line_number: 0,
         };
-
         let ast = Binary {
             left: Box::from(Unary {
                 operator: minus_token,
-                right: Box::from(number),
+                right: Box::from(onetwothree),
             }),
-            operator: multiplication,
+            operator: multi,
             right: Box::from(group),
         };
 
-	let result = ast.to_string();
-	assert_eq!(result, "(* (- 123) (group 45.67))");
+        let result = ast.to_string();
+        assert_eq!(result, "(* (- 123) (group 45.67))");
     }
 }
