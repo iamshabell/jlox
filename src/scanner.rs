@@ -252,10 +252,7 @@ impl Scanner {
     }
 
     fn add_token_alt(&mut self, token_type: TokenType, literal: Option<LiteralValue>) {
-        let mut text = "".to_string();
-        let _ = self.source[self.start..self.current]
-            .chars()
-            .map(|ch| text.push(ch));
+        let mut text = self.source[self.start..self.current].to_string();
 
         self.tokens.push(Token {
             token_type,
