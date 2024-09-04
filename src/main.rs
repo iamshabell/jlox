@@ -6,6 +6,7 @@ use std::result::Result;
 
 use crate::scanner::*;
 mod scanner;
+mod expr;
 
 fn run_file(path: &str) -> Result<(), String> {
     match fs::read_to_string(path) {
