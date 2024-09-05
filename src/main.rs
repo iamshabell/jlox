@@ -5,6 +5,7 @@ use std::process::exit;
 use std::result::Result;
 
 use crate::scanner::*;
+use crate::parser::*;
 mod scanner;
 mod expr;
 mod parser;
@@ -18,11 +19,12 @@ fn run_file(path: &str) -> Result<(), String> {
 
 fn run(source: &str) -> Result<(), String> {
     let mut scanner = Scanner::new(source);
-    let tokens = scanner.scan_tokens();
-    while let Ok(token) = &tokens {
-        println!("{:?}", token);
-    }
+    let tokens = scanner.scan_tokens()?;
+    
+    let mut parser = Parser::new(tokens);
+    let parsed_expr = parser.parse()?;
 
+    println!("{}", parsed_expr.to_string());
     Ok(())
 }
 
@@ -48,7 +50,7 @@ fn run_prompt() -> Result<(), String> {
 
         match run(&buffer) {
             Ok(_) => (),
-            Err(_) => return Err("ERROR: could not read line".to_string()),
+            Err(msg) => println!("{}", msg),
         }
     }
 }
