@@ -22,9 +22,10 @@ fn run(source: &str) -> Result<(), String> {
     let tokens = scanner.scan_tokens()?;
     
     let mut parser = Parser::new(tokens);
-    let parsed_expr = parser.parse()?;
+    let expr = parser.parse()?;
 
-    println!("{}", parsed_expr.to_string());
+    let result = expr.evaluate()?;
+    println!("{}", result.to_string());
     Ok(())
 }
 

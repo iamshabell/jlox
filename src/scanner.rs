@@ -211,8 +211,10 @@ impl Scanner {
         if self.is_at_end() {
             return Err("Unterminated string".to_string());
         }
+	
+	self.in_advance();
 
-        let value = &self.source[self.start + 1..self.current];
+        let value = &self.source[self.start + 1..self.current - 1];
 
         self.add_token_alt(StringLit, Some(StringValue(value.to_string())));
 
