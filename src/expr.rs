@@ -1,7 +1,7 @@
 use crate::scanner;
 use crate::scanner::{Token, TokenType};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum LiteralValue {
     Number(f32),
     StringValue(String),
@@ -39,6 +39,15 @@ impl LiteralValue {
         }
     }
 
+     pub fn to_type(&self) -> &str {
+        match self {
+            LiteralValue::Number(x) => "Number",
+            LiteralValue::StringValue(x) => "String",
+            LiteralValue::True | LiteralValue::False => "Boolean",
+            LiteralValue::Nil => "Nil",
+        }
+    }
+
     pub fn from_token(token: Token) -> Self {
         match token.token_type {
             TokenType::Number => Self::Number(unwrap_as_f32(token.literal)),
@@ -68,7 +77,7 @@ impl LiteralValue {
                 }
             }
             StringValue(s) => {
-                if s.len() == 0 {
+                if s.is_empty() {
                     True
                 } else {
                     False
@@ -131,11 +140,11 @@ impl Expr {
                 match (&right, operator.token_type) {
                     (Number(x), TokenType::Minus) => Ok(Number(-x)),
                     (_, TokenType::Minus) => Err(format!(
-                        "Minus not implemented yet for {}",
-                        right.to_string()
+                        "Minus not implemented for {}",
+                        right.to_type()
                     )),
                     (any, TokenType::Bang) => Ok(any.is_falsy()),
-                    _ => todo!(),
+                    (_, token_type) => Err(format!("{} is not a valid unary operator", token_type)),
                 }
             }
             Expr::Binary {
@@ -161,20 +170,20 @@ impl Expr {
                     (Number(x), TokenType::LessEqual, Number(y)) => {
                         Ok(LiteralValue::from_bool(x <= y))
                     }
-                    (Number(x), TokenType::BangEqual, Number(y)) => {
-                        Ok(LiteralValue::from_bool(x != y))
-                    }
-                    (Number(x), TokenType::EqualEqual, Number(y)) => {
-                        Ok(LiteralValue::from_bool(x == y))
-                    }
                     (StringValue(s1), TokenType::Plus, StringValue(s2)) => {
                         Ok(StringValue(format!("{}{}", s1, s2)))
                     }
-		    (StringValue(s1), TokenType::EqualEqual, StringValue(s2)) => {
-                        Ok(LiteralValue::from_bool(s1 == s2))
+                    (x, TokenType::BangEqual, y) => Ok(LiteralValue::from_bool(x != y)),
+                    (x, TokenType::EqualEqual, y) => Ok(LiteralValue::from_bool(x == y)),
+		    (StringValue(s1), TokenType::Greater, StringValue(s2)) => {
+                        Ok(LiteralValue::from_bool(s1 > s2))
                     }
-		    (StringValue(s1), TokenType::BangEqual, StringValue(s2)) => {
-                        Ok(LiteralValue::from_bool(s1 != s2))
+                    (StringValue(s1),TokenType::GreaterEqual, StringValue(s2)) => {
+                        Ok(LiteralValue::from_bool(s1 >= s2))
+                    }
+                    (StringValue(s1),TokenType::Less, StringValue(s2)) => Ok(LiteralValue::from_bool(s1 < s2)),
+                    (StringValue(s1),TokenType::LessEqual, StringValue(s2)) => {
+                        Ok(LiteralValue::from_bool(s1 <= s2))
                     }
                     (Number(_), opr, StringValue(_)) => {
                         Err(format!("'{}' can not operate on string and number", opr))
@@ -182,10 +191,13 @@ impl Expr {
                     (StringValue(_), opr, Number(_)) => {
                         Err(format!("'{}' can not operate on string and number", opr))
                     }
-                    _ => todo!(),
+                    (x, token_type, y) => Err(format!(
+                        "'{}' is not implemented for these {:?} and  {:?} operands",
+                        token_type, x, y
+                    )),
                 }
             }
-            _ => todo!(),
+            _ => Err("Operands must be two numbers or two strings.".to_string()),
         }
     }
 
