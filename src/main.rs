@@ -6,18 +6,22 @@ use std::result::Result;
 
 use crate::scanner::*;
 use crate::parser::*;
+use crate::interpreter::*;
+
 mod scanner;
 mod expr;
 mod parser;
+mod interpreter;
 
 fn run_file(path: &str) -> Result<(), String> {
+    let mut interpreter = Interpreter::new();
     match fs::read_to_string(path) {
-        Ok(contents) => run(&contents),
+        Ok(contents) => run(&mut interpreter, &contents),
         Err(_) => Err("ERROR: could not run file".to_string()),
     }
 }
 
-fn run(source: &str) -> Result<(), String> {
+fn run(interpreter: &mut Interpreter, source: &str) -> Result<(), String> {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens()?;
     
@@ -30,6 +34,7 @@ fn run(source: &str) -> Result<(), String> {
 }
 
 fn run_prompt() -> Result<(), String> {
+    let mut interpreter = Interpreter::new();
     loop {
         print!("> ");
         match io::stdout().flush() {
@@ -49,7 +54,7 @@ fn run_prompt() -> Result<(), String> {
             Err(_) => return Err("ERROR: could not read line".to_string()),
         }
 
-        match run(&buffer) {
+        match run(&mut interpreter, &buffer) {
             Ok(_) => (),
             Err(msg) => println!("{}", msg),
         }
