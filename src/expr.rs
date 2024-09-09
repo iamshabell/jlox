@@ -1,3 +1,4 @@
+use crate::environment::Environment;
 use crate::scanner;
 use crate::scanner::{Token, TokenType};
 
@@ -39,7 +40,7 @@ impl LiteralValue {
         }
     }
 
-     pub fn to_type(&self) -> &str {
+    pub fn to_type(&self) -> &str {
         match self {
             LiteralValue::Number(x) => "Number",
             LiteralValue::StringValue(x) => "String",
@@ -106,11 +107,15 @@ pub enum Expr {
         operator: Token,
         right: Box<Expr>,
     },
+    Variable {
+        name: Token,
+    },
 }
 
 impl Expr {
     pub fn to_string(&self) -> String {
         match self {
+            Expr::Variable { name } => format!("(var {})", name.lexeme),
             Expr::Binary {
                 left,
                 operator,
@@ -131,18 +136,21 @@ impl Expr {
         }
     }
 
-    pub fn evaluate(&self) -> Result<LiteralValue, String> {
+    pub fn evaluate(&self, environment: &Environment) -> Result<LiteralValue, String> {
         match self {
+            Expr::Variable { name } => match environment.get(name.lexeme.clone()) {
+                Some(value) => Ok(value.clone()),
+                None => Err(format!("Variable '{}' has not been declared", name.lexeme)),
+            },
             Expr::Literal { value } => Ok((*value).clone()),
-            Expr::Grouping { expression } => expression.evaluate(),
+            Expr::Grouping { expression } => expression.evaluate(environment),
             Expr::Unary { operator, right } => {
-                let right = right.evaluate()?;
+                let right = right.evaluate(environment)?;
                 match (&right, operator.token_type) {
                     (Number(x), TokenType::Minus) => Ok(Number(-x)),
-                    (_, TokenType::Minus) => Err(format!(
-                        "Minus not implemented for {}",
-                        right.to_type()
-                    )),
+                    (_, TokenType::Minus) => {
+                        Err(format!("Minus not implemented for {}", right.to_type()))
+                    }
                     (any, TokenType::Bang) => Ok(any.is_falsy()),
                     (_, token_type) => Err(format!("{} is not a valid unary operator", token_type)),
                 }
@@ -152,8 +160,8 @@ impl Expr {
                 operator,
                 right,
             } => {
-                let left = left.evaluate()?;
-                let right = right.evaluate()?;
+                let left = left.evaluate(environment)?;
+                let right = right.evaluate(environment)?;
 
                 match (&left, operator.token_type, &right) {
                     (Number(x), TokenType::Plus, Number(y)) => Ok(Number(x + y)),
@@ -175,14 +183,16 @@ impl Expr {
                     }
                     (x, TokenType::BangEqual, y) => Ok(LiteralValue::from_bool(x != y)),
                     (x, TokenType::EqualEqual, y) => Ok(LiteralValue::from_bool(x == y)),
-		    (StringValue(s1), TokenType::Greater, StringValue(s2)) => {
+                    (StringValue(s1), TokenType::Greater, StringValue(s2)) => {
                         Ok(LiteralValue::from_bool(s1 > s2))
                     }
-                    (StringValue(s1),TokenType::GreaterEqual, StringValue(s2)) => {
+                    (StringValue(s1), TokenType::GreaterEqual, StringValue(s2)) => {
                         Ok(LiteralValue::from_bool(s1 >= s2))
                     }
-                    (StringValue(s1),TokenType::Less, StringValue(s2)) => Ok(LiteralValue::from_bool(s1 < s2)),
-                    (StringValue(s1),TokenType::LessEqual, StringValue(s2)) => {
+                    (StringValue(s1), TokenType::Less, StringValue(s2)) => {
+                        Ok(LiteralValue::from_bool(s1 < s2))
+                    }
+                    (StringValue(s1), TokenType::LessEqual, StringValue(s2)) => {
                         Ok(LiteralValue::from_bool(s1 <= s2))
                     }
                     (Number(_), opr, StringValue(_)) => {

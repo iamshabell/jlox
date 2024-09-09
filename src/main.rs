@@ -4,14 +4,17 @@ use std::io::{self, BufRead, Write};
 use std::process::exit;
 use std::result::Result;
 
-use crate::scanner::*;
-use crate::parser::*;
 use crate::interpreter::*;
+use crate::parser::*;
+use crate::scanner::*;
+use crate::stmt::Stmt::*;
 
-mod scanner;
+mod environment;
 mod expr;
-mod parser;
 mod interpreter;
+mod parser;
+mod scanner;
+mod stmt;
 
 fn run_file(path: &str) -> Result<(), String> {
     let mut interpreter = Interpreter::new();
@@ -24,12 +27,11 @@ fn run_file(path: &str) -> Result<(), String> {
 fn run(interpreter: &mut Interpreter, source: &str) -> Result<(), String> {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens()?;
-    
-    let mut parser = Parser::new(tokens);
-    let expr = parser.parse()?;
 
-    let result = expr.evaluate()?;
-    println!("{}", result.to_string());
+    let mut parser = Parser::new(tokens);
+    let stmts = parser.parse()?;
+    interpreter.interpret(stmts);
+
     Ok(())
 }
 
