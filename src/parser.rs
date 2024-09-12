@@ -1,3 +1,5 @@
+use core::panic;
+
 use crate::expr::{Expr, Expr::*, LiteralValue};
 use crate::scanner::{Token, TokenType, TokenType::*};
 use crate::stmt::Stmt::{self, *};
@@ -92,7 +94,26 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Result<Expr, String> {
-        self.equality()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> Result<Expr, String> {
+        let mut expr = self.equality()?;
+
+        if self.match_token(Equal) {
+            let equals = self.previous();
+            let value = self.assignment()?;
+
+            match expr {
+                Variable { name } => Ok(Assign {
+                    name,
+                    value: Box::from(value),
+                }),
+                _ => Err("Invalid assignment target.".to_string()),
+            }
+        } else {
+            Ok(expr)
+        }
     }
 
     fn equality(&mut self) -> Result<Expr, String> {
