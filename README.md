@@ -11,9 +11,9 @@ This project is an implementation of the Lox programming language interpreter, b
 - **Lexer and Parser:** Implements a lexer and recursive descent parser for Lox.
 - **Expression Evaluation:** Supports arithmetic expressions and precedence handling (e.g., `2 + 2 * 2` will be `2 + (2 * 2)` which evaluates to `6`).
 - **Print Statements:** Handles `print` statements to output results (e.g., `print 2 + 2;` outputs `4`).
+- **Variable Storage:** Supports variable declarations and usage (e.g., `var i = 2; print i;` outputs `2`).
 
 ### In Progress
-- **Variable Storage:** Supports variable declarations and usage (e.g., `var i = 2; print i;` outputs `2`).
 - **Control Flow:** Planned support for `if`, `else`, `while`, and `for` loops.
 - **Functions:** Planned support for defining and calling functions.
 - **Classes and Objects:** Planned support for class definitions, instantiation, and method calls.
