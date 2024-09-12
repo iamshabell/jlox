@@ -16,17 +16,17 @@ This project is an implementation of the Lox programming language interpreter, b
 ### In Progress
 - **Scope**: It defines a region where a name maps to a certain entity, and will potentially help us get `classes` and `functions`  
 For Example: 
-        ```python
-        {
-            var a = "first block",
-            print a; // "first block"
-        }
+```
+{
+ var a = "first block",
+ print a; // "first block"
+}
 
-        {
-            var a = "second block",
-            print a; // second block
-        }
-        ```
+{
+ var a = "second block",
+ print a; // second block
+}
+```
 ### Future
 - **Control Flow:** Planned support for `if`, `else`, `while`, and `for` loops.
 - **Functions:** Planned support for defining and calling functions.
