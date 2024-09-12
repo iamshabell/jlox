@@ -14,6 +14,20 @@ This project is an implementation of the Lox programming language interpreter, b
 - **Variable Storage:** Supports variable declarations and usage (e.g., `var i = 2; print i;` outputs `2`).
 
 ### In Progress
+- **Scope**: It defines a region where a name maps to a certain entity, and will potentially help us get `classes` and `functions`  
+For Example: 
+        ```python
+        {
+            var a = "first block",
+            print a; // "first block"
+        }
+
+        {
+            var a = "second block",
+            print a; // second block
+        }
+        ```
+### Future
 - **Control Flow:** Planned support for `if`, `else`, `while`, and `for` loops.
 - **Functions:** Planned support for defining and calling functions.
 - **Classes and Objects:** Planned support for class definitions, instantiation, and method calls.

@@ -30,7 +30,7 @@ fn run(interpreter: &mut Interpreter, source: &str) -> Result<(), String> {
 
     let mut parser = Parser::new(tokens);
     let stmts = parser.parse()?;
-    interpreter.interpret(stmts);
+    interpreter.interpret(stmts)?;
 
     Ok(())
 }
